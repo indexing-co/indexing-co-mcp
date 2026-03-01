@@ -14,26 +14,19 @@ export class StreamClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
-  private key: string;
-  private endpoint: string;
+  private url: string;
   private connected = false;
   private shuttingDown = false;
   private connectedAt: number | null = null;
 
-  constructor(key: string, clusterOrHost?: string) {
-    this.key = key;
-    if (clusterOrHost && (clusterOrHost.startsWith('ws://') || clusterOrHost.startsWith('wss://'))) {
-      this.endpoint = `${clusterOrHost}/app/${key}?protocol=7`;
-    } else {
-      const cluster = clusterOrHost || 'us2';
-      this.endpoint = `wss://ws-${cluster}.pusher.com/app/${key}?protocol=7`;
-    }
+  constructor(url: string) {
+    this.url = url;
   }
 
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(this.endpoint);
+        this.ws = new WebSocket(this.url);
 
         this.ws.addEventListener('open', () => {
           log('WebSocket connection opened');

@@ -1,47 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { StreamClient } from './ws/client.js';
+import { ApiClient } from './api/client.js';
 import { createServer } from './mcp/server.js';
 import { initDb } from './storage/sqlite.js';
+import { loadConfig } from './config.js';
 
 function log(msg: string) {
   process.stderr.write(`[indexing-co-mcp] ${msg}\n`);
-}
-
-function loadConfig(): { key: string; cluster?: string; host?: string } {
-  // Check env vars first
-  if (process.env.PUSHER_KEY) {
-    return {
-      key: process.env.PUSHER_KEY,
-      cluster: process.env.PUSHER_CLUSTER,
-      host: process.env.PUSHER_HOST,
-    };
-  }
-
-  // Fall back to credentials file
-  const credPath = path.join(os.homedir(), '.indexing-co', 'credentials');
-  if (fs.existsSync(credPath)) {
-    const content = fs.readFileSync(credPath, 'utf-8');
-    const vars: Record<string, string> = {};
-    for (const line of content.split('\n')) {
-      const match = line.match(/^([A-Z_]+)=(.+)$/);
-      if (match) vars[match[1]] = match[2].trim();
-    }
-
-    if (vars.PUSHER_KEY) {
-      return {
-        key: vars.PUSHER_KEY,
-        cluster: vars.PUSHER_CLUSTER,
-        host: vars.PUSHER_HOST,
-      };
-    }
-  }
-
-  throw new Error(
-    'Missing stream config. Set PUSHER_KEY env var or add PUSHER_KEY to ~/.indexing-co/credentials'
-  );
 }
 
 async function main() {
@@ -49,19 +14,23 @@ async function main() {
 
   // Load config
   const config = loadConfig();
-  log(`Stream key: ${config.key.slice(0, 4)}...`);
+  log(`Stream: ${config.streamUrl.replace(/\?.*/, '')}`);
+  log(`API: ${config.baseUrl}`);
 
   // Initialize SQLite
   initDb();
   log('SQLite initialized');
 
   // Connect to event stream via WebSocket
-  const stream = new StreamClient(config.key, config.host || config.cluster);
+  const stream = new StreamClient(config.streamUrl);
   await stream.connect();
   log('WebSocket connected');
 
+  // Create API client
+  const api = new ApiClient(config.baseUrl, config.apiKey);
+
   // Create and start MCP server
-  const server = createServer(stream);
+  const server = createServer(stream, api);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   log('MCP server running on stdio');
