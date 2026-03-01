@@ -93,6 +93,9 @@ export class StreamClient {
         log(`Subscribed to ${msg.channel}`);
         break;
       default:
+        // Skip internal protocol events
+        if (msg.event.startsWith('pusher:') || msg.event.startsWith('pusher_internal:')) break;
+
         if (msg.channel && this.subscriptions.has(msg.channel)) {
           try {
             const data = JSON.parse(msg.data) as { events?: Record<string, unknown>[] };
