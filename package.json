@@ -1,0 +1,22 @@
+{
+  "name": "indexing-co-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for streaming live blockchain data from Indexing Co pipelines",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "better-sqlite3": "^12.6.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
