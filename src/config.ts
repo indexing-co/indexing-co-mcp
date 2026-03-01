@@ -8,7 +8,7 @@ export interface Config {
   baseUrl: string;
 }
 
-export function loadConfig(): Config {
+export async function loadConfig(): Promise<Config> {
   const env = process.env;
 
   // Read credentials file as fallback
@@ -26,24 +26,6 @@ export function loadConfig(): Config {
     return env[envKey] || vars[fileKey ?? envKey];
   }
 
-  // Stream URL: explicit URL, or constructed from Pusher config
-  let streamUrl = get('STREAM_URL');
-  if (!streamUrl) {
-    const key = get('PUSHER_KEY');
-    if (!key) {
-      throw new Error(
-        'Missing stream config. Set STREAM_URL or PUSHER_KEY (env var or ~/.indexing-co/credentials)'
-      );
-    }
-    const host = get('PUSHER_HOST');
-    if (host && (host.startsWith('ws://') || host.startsWith('wss://'))) {
-      streamUrl = `${host}/app/${key}?protocol=7`;
-    } else {
-      const cluster = get('PUSHER_CLUSTER') || 'us2';
-      streamUrl = `wss://ws-${cluster}.pusher.com/app/${key}?protocol=7`;
-    }
-  }
-
   // API config
   const apiKey = get('INDEXING_API_KEY', 'API_KEY');
   if (!apiKey) {
@@ -52,6 +34,19 @@ export function loadConfig(): Config {
     );
   }
   const baseUrl = get('INDEXING_BASE_URL') || 'https://app.indexing.co/dw';
+
+  // Stream URL: explicit override or fetched from API
+  let streamUrl = get('STREAM_URL');
+  if (!streamUrl) {
+    const res = await fetch(`${baseUrl}/stream`, {
+      headers: { 'X-API-KEY': apiKey },
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch stream URL from ${baseUrl}/stream (${res.status})`);
+    }
+    const body = (await res.json()) as { url: string };
+    streamUrl = body.url;
+  }
 
   return { streamUrl, apiKey, baseUrl };
 }

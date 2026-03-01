@@ -8,51 +8,50 @@ if (!channel) {
   process.exit(1);
 }
 
-const config = loadConfig();
-const stream = new StreamClient(config.streamUrl);
-
 let eventCount = 0;
 let startTime = Date.now();
 let connected = false;
 
 printBanner(channel);
 
-// Connect with timeout
-const timeout = setTimeout(() => {
-  if (!connected) {
-    console.error('Connection timed out after 10s');
-    process.exit(1);
-  }
-}, 10_000);
+loadConfig()
+  .then((config) => {
+    const stream = new StreamClient(config.streamUrl);
 
-stream
-  .connect()
-  .then(() => {
-    connected = true;
-    clearTimeout(timeout);
-    startTime = Date.now();
-
-    printConnected();
-
-    stream.subscribe(channel, (events) => {
-      for (const event of events) {
-        eventCount++;
-        printEvent(event, eventCount);
+    // Connect with timeout
+    const timeout = setTimeout(() => {
+      if (!connected) {
+        console.error('Connection timed out after 10s');
+        process.exit(1);
       }
+    }, 10_000);
+
+    // Graceful shutdown
+    const shutdown = () => {
+      stream.disconnect();
+      printDisconnect(eventCount, startTime);
+      process.exit(0);
+    };
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+
+    return stream.connect().then(() => {
+      connected = true;
+      clearTimeout(timeout);
+      startTime = Date.now();
+
+      printConnected();
+
+      stream.subscribe(channel, (events) => {
+        for (const event of events) {
+          eventCount++;
+          printEvent(event, eventCount);
+        }
+      });
     });
   })
   .catch((err: unknown) => {
-    clearTimeout(timeout);
-    console.error(`Failed to connect: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`Failed to start: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   });
-
-// Graceful shutdown
-const shutdown = () => {
-  stream.disconnect();
-  printDisconnect(eventCount, startTime);
-  process.exit(0);
-};
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);

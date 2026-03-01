@@ -13,7 +13,7 @@ async function main() {
   log('Starting...');
 
   // Load config
-  const config = loadConfig();
+  const config = await loadConfig();
   log(`Stream: ${config.streamUrl.replace(/\?.*/, '')}`);
   log(`API: ${config.baseUrl}`);
 
