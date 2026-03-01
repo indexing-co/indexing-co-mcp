@@ -5,7 +5,7 @@ Stream live blockchain data from [Indexing Co](https://indexing.co) pipelines di
 Instead of pushing to a database and querying separately, this MCP server subscribes to pipeline events over WebSockets and stores them in local SQLite — so Claude can query, analyze, and react to blockchain data in real time.
 
 ```
-[Blockchain] → [Indexer Pipeline] → [Pusher/Soketi] → [MCP Server] → [SQLite] → [Claude Code]
+[Blockchain] → [Indexer Pipeline] → [DIRECT adapter] → [MCP Server (WebSocket)] → [SQLite] → [Claude Code]
 ```
 
 ## Quick Start
@@ -20,12 +20,12 @@ npm install && npm run build
 
 ### 2. Configure
 
-Add your Pusher credentials to `~/.indexing-co/credentials`:
+Add your stream credentials to `~/.indexing-co/credentials`:
 
 ```
 API_KEY=<your Indexing Co API key>
-PUSHER_KEY=<your Pusher key>
-PUSHER_CLUSTER=<your Pusher cluster, e.g. us2>
+PUSHER_KEY=<your stream key>
+PUSHER_CLUSTER=<your stream cluster, e.g. us2>
 ```
 
 ### 3. Register with Claude Code
@@ -65,8 +65,8 @@ When creating an Indexing Co pipeline, add `DIRECT` as a delivery adapter:
 }
 ```
 
-- `table` is the Pusher channel name you'll subscribe to
-- Empty `connectionUri` uses shared Pusher env vars
+- `table` is the channel name you'll subscribe to
+- Empty `connectionUri` uses env vars
 - Can run alongside any other adapter (e.g., DIRECT + POSTGRES)
 - Events only sent when at least one subscriber is connected — no wasted API calls
 
@@ -87,7 +87,7 @@ LIMIT 20;
 
 ### Architecture
 
-- **No Pusher client library** — uses Node 22+ built-in `WebSocket` to speak the Pusher protocol directly
+- **No external client libraries** — uses Node 22+ built-in `WebSocket`
 - **Auto-reconnect** with exponential backoff
 - **SQLite with WAL mode** for concurrent read/write
 - **Generic schema** — works with any pipeline output shape
@@ -97,9 +97,9 @@ LIMIT 20;
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PUSHER_KEY` | Yes | Pusher app key |
-| `PUSHER_CLUSTER` | No | Pusher cluster (default: `us2`) |
-| `PUSHER_HOST` | No | Custom host for self-hosted Soketi |
+| `PUSHER_KEY` | Yes | Stream app key |
+| `PUSHER_CLUSTER` | No | Stream cluster (default: `us2`) |
+| `PUSHER_HOST` | No | Custom host for self-hosted instances |
 
 These can also be set in `~/.indexing-co/credentials`.
 
@@ -107,7 +107,6 @@ These can also be set in `~/.indexing-co/credentials`.
 
 - Node.js 22+
 - An [Indexing Co](https://accounts.indexing.co) account
-- A Pusher account (or self-hosted Soketi instance)
 
 ## License
 

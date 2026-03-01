@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { PusherClient } from './pusher/client.js';
+import { StreamClient } from './ws/client.js';
 import { createServer } from './mcp/server.js';
 import { initDb } from './storage/sqlite.js';
 
@@ -40,7 +40,7 @@ function loadConfig(): { key: string; cluster?: string; host?: string } {
   }
 
   throw new Error(
-    'Missing Pusher config. Set PUSHER_KEY env var or add PUSHER_KEY to ~/.indexing-co/credentials'
+    'Missing stream config. Set PUSHER_KEY env var or add PUSHER_KEY to ~/.indexing-co/credentials'
   );
 }
 
@@ -49,19 +49,19 @@ async function main() {
 
   // Load config
   const config = loadConfig();
-  log(`Pusher key: ${config.key.slice(0, 4)}...`);
+  log(`Stream key: ${config.key.slice(0, 4)}...`);
 
   // Initialize SQLite
   initDb();
   log('SQLite initialized');
 
-  // Connect to Pusher via raw WebSocket
-  const pusher = new PusherClient(config.key, config.host || config.cluster);
-  await pusher.connect();
-  log('Pusher WebSocket connected');
+  // Connect to event stream via WebSocket
+  const stream = new StreamClient(config.key, config.host || config.cluster);
+  await stream.connect();
+  log('WebSocket connected');
 
   // Create and start MCP server
-  const server = createServer(pusher);
+  const server = createServer(stream);
   const transport = new StdioServerTransport();
   await server.connect(transport);
   log('MCP server running on stdio');
@@ -69,7 +69,7 @@ async function main() {
   // Graceful shutdown
   const shutdown = () => {
     log('Shutting down...');
-    pusher.disconnect();
+    stream.disconnect();
     process.exit(0);
   };
 

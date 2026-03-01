@@ -1,4 +1,4 @@
-type PusherEvent = {
+type WsEvent = {
   event: string;
   channel?: string;
   data: string;
@@ -6,7 +6,7 @@ type PusherEvent = {
 
 type EventCallback = (events: Record<string, unknown>[]) => void;
 
-export class PusherClient {
+export class StreamClient {
   private ws: WebSocket | null = null;
   private subscriptions = new Map<string, EventCallback>();
   private socketId: string | null = null;
@@ -40,7 +40,7 @@ export class PusherClient {
         });
 
         this.ws.addEventListener('message', (evt) => {
-          const msg = JSON.parse(String(evt.data)) as PusherEvent;
+          const msg = JSON.parse(String(evt.data)) as WsEvent;
           this.handleMessage(msg, resolve);
         });
 
@@ -62,7 +62,7 @@ export class PusherClient {
     });
   }
 
-  private handleMessage(msg: PusherEvent, onConnect?: (value: void) => void) {
+  private handleMessage(msg: WsEvent, onConnect?: (value: void) => void) {
     switch (msg.event) {
       case 'pusher:connection_established': {
         const data = JSON.parse(msg.data) as { socket_id: string; activity_timeout?: number };
@@ -86,7 +86,7 @@ export class PusherClient {
         break;
       case 'pusher:error': {
         const errData = JSON.parse(msg.data) as { message?: string; code?: number };
-        log(`Pusher error: ${errData.message} (code: ${errData.code})`);
+        log(`Stream error: ${errData.message} (code: ${errData.code})`);
         break;
       }
       case 'pusher_internal:subscription_succeeded':
@@ -175,5 +175,5 @@ export class PusherClient {
 }
 
 function log(msg: string) {
-  process.stderr.write(`[pusher] ${msg}\n`);
+  process.stderr.write(`[ws] ${msg}\n`);
 }

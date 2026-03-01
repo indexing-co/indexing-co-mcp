@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { PusherClient } from '../pusher/client.js';
+import type { StreamClient } from '../ws/client.js';
 import { insertEvents, getEvents, getStats, runQuery, describeData, clearEvents, getDbPath } from '../storage/sqlite.js';
 
-export function registerTools(server: McpServer, pusher: PusherClient) {
-  server.tool('subscribe', 'Subscribe to a Pusher channel. Events start flowing into SQLite.', { channel: z.string() }, async ({ channel }) => {
-    pusher.subscribe(channel, (events) => {
+export function registerTools(server: McpServer, stream: StreamClient) {
+  server.tool('subscribe', 'Subscribe to a channel. Events start flowing into SQLite.', { channel: z.string() }, async ({ channel }) => {
+    stream.subscribe(channel, (events) => {
       insertEvents(channel, events);
       process.stderr.write(`[mcp] Received ${events.length} events on '${channel}'\n`);
     });
@@ -14,12 +14,12 @@ export function registerTools(server: McpServer, pusher: PusherClient) {
   });
 
   server.tool('unsubscribe', 'Stop receiving events for a channel.', { channel: z.string() }, async ({ channel }) => {
-    pusher.unsubscribe(channel);
+    stream.unsubscribe(channel);
     return { content: [{ type: 'text', text: `Unsubscribed from channel '${channel}'.` }] };
   });
 
   server.tool('get_subscriptions', 'List active channels, connection status, and event counts.', {}, async () => {
-    const subs = pusher.getSubscriptions();
+    const subs = stream.getSubscriptions();
     const stats = getStats();
 
     const result = {
@@ -83,7 +83,7 @@ export function registerTools(server: McpServer, pusher: PusherClient) {
   );
 
   server.tool('get_status', 'WebSocket state, channels, event counts, uptime, DB path.', {}, async () => {
-    const subs = pusher.getSubscriptions();
+    const subs = stream.getSubscriptions();
     const stats = getStats();
 
     const status = {
