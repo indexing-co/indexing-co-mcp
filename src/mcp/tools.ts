@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { StreamClient } from '../ws/client.js';
 import type { ApiClient } from '../api/client.js';
 import { insertEvents, getEvents, getStats, runQuery, describeData, clearEvents, getDbPath } from '../storage/sqlite.js';
+import { sparkline, lineChart, barChart, histogram, table } from '../cli/charts.js';
 
 function json(data: unknown) {
   return { content: [{ type: 'text' as const, text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) }] };
@@ -86,6 +87,63 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
       const deleted = clearEvents(channel);
       const scope = channel ? `channel '${channel}'` : 'all channels';
       return json(`Cleared ${deleted} events from ${scope}.`);
+    }
+  );
+
+  server.tool(
+    'chart',
+    'Run a SQL query and render the results as an ASCII chart. Types: sparkline, line, bar, histogram, table.',
+    {
+      type: z.enum(['sparkline', 'line', 'bar', 'histogram', 'table']),
+      sql: z.string(),
+      options: z
+        .object({
+          title: z.string().optional(),
+          width: z.number().optional(),
+          height: z.number().optional(),
+          bins: z.number().optional(),
+        })
+        .optional(),
+    },
+    async ({ type, sql, options }) => {
+      try {
+        const result = runQuery(sql);
+        const { columns, rows } = result;
+        const records = rows as Record<string, unknown>[];
+
+        switch (type) {
+          case 'sparkline': {
+            const col = findNumericColumn(columns, records);
+            if (!col) return error('No numeric column found for sparkline');
+            const values = records.map((r) => Number(r[col]));
+            return json(sparkline(values));
+          }
+          case 'line': {
+            const col = findNumericColumn(columns, records);
+            if (!col) return error('No numeric column found for line chart');
+            const values = records.map((r) => Number(r[col]));
+            return json(lineChart(values, { title: options?.title, width: options?.width, height: options?.height }));
+          }
+          case 'bar': {
+            if (columns.length < 2) return error('Bar chart requires at least 2 columns (label, value)');
+            const labelCol = columns[0];
+            const valueCol = columns[1];
+            const data = records.map((r) => ({ label: String(r[labelCol] ?? ''), value: Number(r[valueCol] ?? 0) }));
+            return json(barChart(data, { title: options?.title, width: options?.width }));
+          }
+          case 'histogram': {
+            const col = findNumericColumn(columns, records);
+            if (!col) return error('No numeric column found for histogram');
+            const values = records.map((r) => Number(r[col]));
+            return json(histogram(values, { title: options?.title, width: options?.width, bins: options?.bins }));
+          }
+          case 'table': {
+            return json(table(columns, records, { title: options?.title }));
+          }
+        }
+      } catch (err) {
+        return error(`Chart error: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
   );
 
@@ -308,4 +366,16 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
       }
     }
   );
+}
+
+const SKIP_COLUMNS = new Set(['id', 'received_at']);
+
+function findNumericColumn(columns: string[], rows: Record<string, unknown>[]): string | null {
+  if (rows.length === 0) return null;
+  for (const col of columns) {
+    if (SKIP_COLUMNS.has(col)) continue;
+    const sample = rows.find((r) => r[col] !== null && r[col] !== undefined);
+    if (sample && typeof sample[col] === 'number') return col;
+  }
+  return null;
 }

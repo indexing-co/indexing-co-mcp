@@ -1,34 +1,34 @@
 // ANSI escape codes
-const RESET = '\x1b[0m';
-const BOLD = '\x1b[1m';
-const DIM = '\x1b[2m';
-const ITALIC = '\x1b[3m';
+export const RESET = '\x1b[0m';
+export const BOLD = '\x1b[1m';
+export const DIM = '\x1b[2m';
+export const ITALIC = '\x1b[3m';
 
-const RED = '\x1b[31m';
-const GREEN = '\x1b[32m';
-const YELLOW = '\x1b[33m';
-const BLUE = '\x1b[34m';
-const MAGENTA = '\x1b[35m';
-const CYAN = '\x1b[36m';
-const WHITE = '\x1b[37m';
-const GRAY = '\x1b[90m';
-const BRIGHT_YELLOW = '\x1b[93m';
-const BRIGHT_BLUE = '\x1b[94m';
-const BRIGHT_MAGENTA = '\x1b[95m';
-const BRIGHT_WHITE = '\x1b[97m';
+export const RED = '\x1b[31m';
+export const GREEN = '\x1b[32m';
+export const YELLOW = '\x1b[33m';
+export const BLUE = '\x1b[34m';
+export const MAGENTA = '\x1b[35m';
+export const CYAN = '\x1b[36m';
+export const WHITE = '\x1b[37m';
+export const GRAY = '\x1b[90m';
+export const BRIGHT_YELLOW = '\x1b[93m';
+export const BRIGHT_BLUE = '\x1b[94m';
+export const BRIGHT_MAGENTA = '\x1b[95m';
+export const BRIGHT_WHITE = '\x1b[97m';
 
-const BOX_WIDTH = 50;
+export const BOX_WIDTH = 50;
 
-function boxLine(content: string, rawLen: number): string {
+export function boxLine(content: string, rawLen: number): string {
   const pad = BOX_WIDTH - 2 - rawLen;
   return `│  ${content}${' '.repeat(Math.max(0, pad))}│`;
 }
 
-function timestamp(): string {
+export function timestamp(): string {
   return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function timestampMs(): string {
+export function timestampMs(): string {
   const d = new Date();
   const t = d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
   return `${t}.${String(d.getMilliseconds()).padStart(3, '0')}`;
@@ -119,7 +119,7 @@ export function printDisconnect(count: number, startTime: number): void {
   console.log('');
 }
 
-function formatDuration(ms: number): string {
+export function formatDuration(ms: number): string {
   const sec = Math.floor(ms / 1000);
   if (sec < 60) return `${sec}s`;
   const min = Math.floor(sec / 60);
@@ -129,7 +129,7 @@ function formatDuration(ms: number): string {
   return `${hr}h ${min % 60}m ${rem}s`;
 }
 
-function colorizeValue(val: unknown, depth = 0): string {
+export function colorizeValue(val: unknown, depth = 0): string {
   if (val === null || val === undefined) {
     return `${DIM}${ITALIC}${GRAY}null${RESET}`;
   }
@@ -183,6 +183,6 @@ function colorizeValue(val: unknown, depth = 0): string {
   return `${BRIGHT_WHITE}${String(val)}${RESET}`;
 }
 
-function truncateHex(hex: string): string {
+export function truncateHex(hex: string): string {
   return `${hex.slice(0, 6)}...${hex.slice(-4)}`;
 }
