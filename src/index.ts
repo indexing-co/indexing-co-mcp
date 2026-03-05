@@ -14,7 +14,7 @@ async function main() {
 
   // Load config
   const config = await loadConfig();
-  log(`Stream: ${config.streamUrl.replace(/\?.*/, '')}`);
+  if (config.streamUrl) log(`Stream: ${config.streamUrl.replace(/\?.*/, '')}`);
   log(`API: ${config.baseUrl}`);
 
   // Initialize SQLite
@@ -22,9 +22,13 @@ async function main() {
   log('SQLite initialized');
 
   // Connect to event stream via WebSocket
-  const stream = new StreamClient(config.streamUrl);
-  await stream.connect();
-  log('WebSocket connected');
+  const stream = new StreamClient(config.streamUrl ?? '');
+  if (config.streamUrl) {
+    await stream.connect();
+    log('WebSocket connected');
+  } else {
+    log('No API key — skipping WebSocket, tools will return setup instructions');
+  }
 
   // Create API client
   const api = new ApiClient(config.baseUrl, config.apiKey);

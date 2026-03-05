@@ -16,7 +16,29 @@ function error(msg: string) {
 export function registerTools(server: McpServer, stream: StreamClient, api: ApiClient) {
   // ── Streaming tools (existing) ────────────────────────────────────────
 
-  server.tool('subscribe', 'Subscribe to a channel. Events start flowing into SQLite.', { channel: z.string() }, async ({ channel }) => {
+  server.tool('subscribe', 'Subscribe to a pipeline\'s DIRECT channel. The channel name must match the `table` field of a pipeline with DIRECT adapter. Use list_pipelines to find valid channel names.', { channel: z.string() }, async ({ channel }) => {
+    // Validate channel exists as a DIRECT pipeline
+    try {
+      const res = await api.get('/pipelines') as { data: Array<{ name: string; enabled: boolean; delivery: { adapter: string; table?: string } }> };
+      const pipeline = res.data.find(
+        (p) => p.delivery?.adapter === 'DIRECT' && p.delivery?.table === channel
+      );
+      if (!pipeline) {
+        const directPipelines = res.data.filter((p) => p.delivery?.adapter === 'DIRECT');
+        const available = directPipelines.map((p) => p.delivery.table).filter(Boolean);
+        const hint = available.length
+          ? `Available DIRECT channels: ${available.join(', ')}`
+          : 'No pipelines with DIRECT adapter found. Create one first with create_pipeline.';
+        return error(`No DIRECT pipeline found for channel '${channel}'. ${hint}`);
+      }
+      if (!pipeline.enabled) {
+        return error(`Pipeline '${pipeline.name}' exists but is not enabled. Re-create it with enabled: true.`);
+      }
+    } catch (err) {
+      return error(`Failed to validate channel: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    // Channel is valid — subscribe
     stream.subscribe(channel, (events) => {
       insertEvents(channel, events);
       process.stderr.write(`[mcp] Received ${events.length} events on '${channel}'\n`);
@@ -165,7 +187,7 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
 
   // ── Pipeline tools ────────────────────────────────────────────────────
 
-  server.tool('list_pipelines', 'List all pipelines.', {}, async () => {
+  server.tool('list_pipelines', 'List all pipelines. For DIRECT streaming pipelines, the delivery.table field is the channel name to use with subscribe.', {}, async () => {
     try {
       return json(await api.get('/pipelines'));
     } catch (err) {
@@ -188,13 +210,13 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
 
   server.tool(
     'create_pipeline',
-    'Create or update a pipeline.',
+    'Create or update a pipeline. Adapter types: POSTGRES (with connectionUri, table, uniqueKeys), HTTP (for webhooks — do NOT use "webhook"), WEBSOCKET, DIRECT (stream to MCP via connectionUri channel name).',
     {
       name: z.string(),
       transformation: z.string(),
       networks: z.array(z.string()),
       delivery: z.object({
-        adapter: z.string(),
+        adapter: z.enum(['POSTGRES', 'HTTP', 'WEBSOCKET', 'DIRECT']),
         connectionUri: z.string().optional(),
         connection: z.record(z.unknown()).optional(),
         table: z.string().optional(),

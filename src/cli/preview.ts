@@ -45,6 +45,10 @@ printBanner(channel);
 
 loadConfig()
   .then((config) => {
+    if (!config.streamUrl || !config.apiKey) {
+      console.error('API key required. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials');
+      process.exit(1);
+    }
     const stream = new StreamClient(config.streamUrl);
 
     // Connect with timeout

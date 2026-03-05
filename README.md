@@ -24,8 +24,6 @@ Add your stream credentials to `~/.indexing-co/credentials`:
 
 ```
 API_KEY=<your Indexing Co API key>
-PUSHER_KEY=<your stream key>
-PUSHER_CLUSTER=<your stream cluster, e.g. us2>
 ```
 
 ### 3. Register with Claude Code
@@ -40,14 +38,28 @@ In Claude Code, the following tools are now available:
 
 | Tool | Description |
 |------|-------------|
-| `subscribe` | Subscribe to a channel. Events start flowing into SQLite. |
+| `subscribe` | Subscribe to a DIRECT pipeline channel. Validates channel exists. |
 | `unsubscribe` | Stop receiving events for a channel. |
 | `get_subscriptions` | List active channels, connection status, event counts. |
 | `get_events` | Get recent raw events as JSON. |
 | `describe_data` | Auto-discover data shape from stored events. |
 | `query` | Run read-only SQL with `json_extract()` support. |
 | `clear_events` | Delete stored events (all or by channel). |
+| `chart` | Run SQL and render results as ASCII chart (sparkline, line, bar, histogram, table). |
 | `get_status` | WebSocket state, channels, event counts, DB path. |
+| `list_pipelines` | List all pipelines. Shows DIRECT channel names. |
+| `get_pipeline` | Get a pipeline by name. |
+| `create_pipeline` | Create or update a pipeline (POSTGRES, HTTP, WEBSOCKET, DIRECT). |
+| `delete_pipeline` | Delete a pipeline. |
+| `backfill` | Backfill historical data for a pipeline. |
+| `list_filters` | List all filters. |
+| `get_filter` | Get filter values with optional prefix search. |
+| `create_filter` | Create a filter or add values to an existing filter. |
+| `delete_filter_values` | Remove values from a filter. |
+| `list_transformations` | List all transformations. |
+| `get_transformation` | Get transformation code by name. |
+| `create_transformation` | Create or update a transformation. |
+| `test_transformation` | Test transformation code against live blockchain data. |
 
 ## How It Works
 
@@ -97,11 +109,8 @@ LIMIT 20;
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PUSHER_KEY` | Yes | Stream app key |
-| `PUSHER_CLUSTER` | No | Stream cluster (default: `us2`) |
-| `PUSHER_HOST` | No | Custom host for self-hosted instances |
-
-These can also be set in `~/.indexing-co/credentials`.
+| `INDEXING_API_KEY` | Yes | Indexing Co API key (also read from `~/.indexing-co/credentials` as `API_KEY`) |
+| `STREAM_URL` | No | Override stream WebSocket URL (auto-fetched from API if not set) |
 
 ## Requirements
 

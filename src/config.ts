@@ -3,8 +3,8 @@ import path from 'path';
 import os from 'os';
 
 export interface Config {
-  streamUrl: string;
-  apiKey: string;
+  streamUrl: string | undefined;
+  apiKey: string | undefined;
   baseUrl: string;
 }
 
@@ -29,15 +29,15 @@ export async function loadConfig(): Promise<Config> {
   // API config
   const apiKey = get('INDEXING_API_KEY', 'API_KEY');
   if (!apiKey) {
-    throw new Error(
-      'Missing API key. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials'
+    process.stderr.write(
+      '[indexing-co-mcp] WARNING: No API key configured. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials. Sign up at accounts.indexing.co\n'
     );
   }
   const baseUrl = get('INDEXING_BASE_URL') || 'https://app.indexing.co/dw';
 
-  // Stream URL: explicit override or fetched from API
-  let streamUrl = get('STREAM_URL');
-  if (!streamUrl) {
+  // Stream URL: explicit override or fetched from API (requires auth)
+  let streamUrl: string | undefined = get('STREAM_URL');
+  if (!streamUrl && apiKey) {
     const res = await fetch(`${baseUrl}/stream`, {
       headers: { 'X-API-KEY': apiKey },
     });

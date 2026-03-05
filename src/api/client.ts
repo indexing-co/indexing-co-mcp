@@ -1,7 +1,7 @@
 export class ApiClient {
   constructor(
     private baseUrl: string,
-    private apiKey: string
+    private apiKey: string | undefined
   ) {}
 
   async get(path: string, query?: Record<string, string>): Promise<unknown> {
@@ -33,6 +33,11 @@ export class ApiClient {
   }
 
   private headers(): Record<string, string> {
+    if (!this.apiKey) {
+      throw new Error(
+        'No API key configured. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials. Sign up at accounts.indexing.co'
+      );
+    }
     return { 'X-API-KEY': this.apiKey, 'Content-Type': 'application/json' };
   }
 
