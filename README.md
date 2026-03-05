@@ -18,6 +18,8 @@ cd indexing-co-mcp
 npm install && npm run build
 ```
 
+This also installs the Claude Code [pipeline skill](SKILL.md) to `~/.claude/skills/`. To update later: `git pull && npm run build`.
+
 ### 2. Configure
 
 Add your stream credentials to `~/.indexing-co/credentials`:

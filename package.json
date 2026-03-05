@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run install-skill",
+    "install-skill": "node scripts/install-skill.js",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "preview": "node dist/cli/preview.js",
