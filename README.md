@@ -62,6 +62,7 @@ In Claude Code, the following tools are now available:
 | `get_transformation` | Get transformation code by name. |
 | `create_transformation` | Create or update a transformation. |
 | `test_transformation` | Test transformation code against live blockchain data. |
+| `parse_subgraph_manifest` | Convert a Graph subgraph manifest into contracts, event signatures, transformation code, and SQL schema scaffolding. |
 
 ## How It Works
 
@@ -98,6 +99,19 @@ WHERE channel = 'my-transfers'
 ORDER BY received_at DESC
 LIMIT 20;
 ```
+
+### Subgraph Migration
+
+`parse_subgraph_manifest` accepts either raw `subgraph.yaml` text or a JSON manifest and returns a pipeline starting point you can feed into the other MCP tools.
+
+Suggested agent flow:
+
+1. Call `parse_subgraph_manifest` with the manifest text.
+2. Use `transformationSuggestions.filterValues` with `create_filter`.
+3. Use `transformationSuggestions.code` with `create_transformation`.
+4. Use `transformationSuggestions.networks` plus your destination config with `create_pipeline`.
+
+The tool also returns `contracts`, `events`, and `sqlSchemaScaffold.ddl` so the target table can be created before backfilling.
 
 ### Architecture
 

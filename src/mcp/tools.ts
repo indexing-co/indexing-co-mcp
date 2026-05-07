@@ -4,6 +4,7 @@ import type { StreamClient } from '../ws/client.js';
 import type { ApiClient } from '../api/client.js';
 import { insertEvents, getEvents, getStats, runQuery, describeData, clearEvents, getDbPath } from '../storage/sqlite.js';
 import { sparkline, lineChart, barChart, histogram, table } from '../cli/charts.js';
+import { parseSubgraphManifest } from '../subgraph/manifest.js';
 
 function json(data: unknown) {
   return { content: [{ type: 'text' as const, text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) }] };
@@ -109,6 +110,21 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
       const deleted = clearEvents(channel);
       const scope = channel ? `channel '${channel}'` : 'all channels';
       return json(`Cleared ${deleted} events from ${scope}.`);
+    }
+  );
+
+  server.tool(
+    'parse_subgraph_manifest',
+    'Parse a Subgraph YAML or JSON manifest into an Indexing Co migration scaffold: contracts, events, transformation code, and SQL schema.',
+    {
+      manifest: z.string(),
+    },
+    async ({ manifest }) => {
+      try {
+        return json(parseSubgraphManifest(manifest));
+      } catch (err) {
+        return error(`Failed to parse subgraph manifest: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
   );
 

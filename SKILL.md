@@ -413,6 +413,73 @@ When a user asks to set up a pipeline, walk through:
 
 ---
 
+## Worked Example: Convert a Subgraph
+
+When a user says "convert this subgraph to an Indexing Co pipeline", use the MCP toolchain in this order:
+
+1. **Parse the manifest** with `parse_subgraph_manifest`
+2. **Create the filter** from returned contract addresses
+3. **Create the transformation** from returned code scaffold
+4. **Create the pipeline** with the returned networks and the user's destination
+5. **Backfill and verify**
+
+Example subgraph manifest input:
+
+```yaml
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: USDC
+    network: mainnet
+    source:
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+      abi: ERC20
+      startBlock: 6082465
+    mapping:
+      entities:
+        - Transfer
+      abis:
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+```
+
+Expected agent sequence:
+
+```text
+parse_subgraph_manifest(manifest=<yaml above>)
+create_filter(
+  name="<result.transformationSuggestions.filterName>",
+  values=<result.transformationSuggestions.filterValues>
+)
+create_transformation(
+  name="<result.transformationSuggestions.transformationName>",
+  code="<result.transformationSuggestions.code>"
+)
+create_pipeline(
+  name="<result.transformationSuggestions.pipelineName>",
+  transformation="<result.transformationSuggestions.transformationName>",
+  networks=<result.transformationSuggestions.networks>,
+  filter="<result.transformationSuggestions.filterName>",
+  filterKeys=["contract_address"],
+  delivery={
+    "adapter": "POSTGRES",
+    "connectionUri": "postgresql://...",
+    "table": "<result.sqlSchemaScaffold.tableName>",
+    "uniqueKeys": ["chain", "transaction_hash", "log_index"]
+  },
+  enabled=true
+)
+```
+
+Use `result.sqlSchemaScaffold.ddl` as the starting SQL table definition. If the manifest only contains event type signatures without ABI parameter names, the generated transformation will use placeholder names like `arg0`, `arg1`; refine them later if clearer column names matter.
+
+---
+
 ## Common Patterns
 
 ### DEX Swaps (Uniswap V2)
