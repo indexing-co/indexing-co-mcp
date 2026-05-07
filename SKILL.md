@@ -375,6 +375,41 @@ Network status: `https://jiti.indexing.co/status/{NETWORK_KEY}`
 
 ---
 
+## Stablecoin Registry
+
+Prefer the MCP tool when it is available:
+
+- `list_stablecoins()` for the full registry
+- `list_stablecoins({ chain: "base" })` to narrow by chain
+
+If the tool is unavailable, use this embedded registry for the most common payment-tracking pairs:
+
+| Chain | Symbol | Decimals | Address |
+| ----- | ------ | -------- | ------- |
+| Ethereum | `USDC` | `6` | `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` |
+| Ethereum | `USDT` | `6` | `0xdAC17F958D2ee523a2206206994597C13D831ec7` |
+| Ethereum | `DAI` | `18` | `0x6B175474E89094C44Da98b954EedeAC495271d0F` |
+| Base | `USDC` | `6` | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| Base | `USDT` | `6` | `0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2` |
+| Base | `DAI` | `18` | `0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb` |
+| Arbitrum | `USDC` | `6` | `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` |
+| Arbitrum | `USDT` | `6` | `0xFd086bC7CD5C481DCC9C85ebe478A1C0b69FCbb9` |
+| Arbitrum | `DAI` | `18` | `0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1` |
+| Optimism | `USDC` | `6` | `0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85` |
+| Optimism | `USDT` | `6` | `0x94b008aA00579c1307B0EF2c499aD98a8CE58e58` |
+| Optimism | `DAI` | `18` | `0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1` |
+| Polygon | `USDC` | `6` | `0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359` |
+| Polygon | `USDT` | `6` | `0xc2132D05D31c914a87C6611C10748AEb04B58e8F` |
+| Polygon | `DAI` | `18` | `0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063` |
+
+Use these values when the user says things like:
+
+- "track all USDC payments to my wallet on Base"
+- "watch DAI transfers on Arbitrum"
+- "index USDT deposits on Optimism"
+
+---
+
 ## Post-Deploy Verification
 
 **A successful transformation test does NOT guarantee live delivery.** The test endpoint runs your code against a block and returns results directly. The live pipeline has additional layers (filter matching, delivery adapter, network connectivity) that can silently fail.
@@ -453,7 +488,7 @@ When a user wants token transfers "through" a specific protocol (e.g., "USDC tra
 
 ```javascript
 // Example: USDC transfers through Aave on Ethereum
-// Filter: USDC contract (0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48)
+// Filter: USDC contract (from the stablecoin registry)
 // Transformation filters by Aave addresses:
 const protocolContracts = new Set([
   '0x98c23e9d8f34fefb1b7bd6a91b7ff122f4e16f5c', // Aave V3 aEthUSDC
@@ -475,6 +510,46 @@ if (!protocolContracts.has(from) && !protocolContracts.has(to)) continue;
 // Use the built-in template:
 function transform(block) {
   return templates.tokenTransfers(block);
+}
+```
+
+### Payment Tracking: USDC To One Wallet On Base
+
+When the user asks to track incoming USDC payments on Base, resolve the token contract as:
+
+- Chain: `base`
+- Symbol: `USDC`
+- Address: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
+- Decimals: `6`
+
+Recommended build steps:
+
+1. Create a filter containing the Base USDC address.
+2. Use `templates.tokenTransfers(block)` in the transformation.
+3. Keep only rows where `decoded.to` equals the target wallet.
+4. Deliver to `DIRECT` for Claude/MCP workflows or `POSTGRES` for app storage.
+
+```javascript
+function transform(block) {
+  const target = '0xYOUR_WALLET'.toLowerCase();
+  const token = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+
+  return templates
+    .tokenTransfers(block)
+    .filter((transfer) =>
+      transfer.contract_address?.toLowerCase() === token &&
+      transfer.decoded?.to?.toLowerCase() === target
+    )
+    .map((transfer) => ({
+      chain: transfer.chain,
+      block: transfer.block,
+      transaction_hash: transfer.transaction_hash,
+      log_index: transfer.log_index,
+      contract_address: transfer.contract_address,
+      from: transfer.decoded.from,
+      to: transfer.decoded.to,
+      value: transfer.decoded.value,
+    }));
 }
 ```
 

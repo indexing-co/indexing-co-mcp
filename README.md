@@ -49,6 +49,7 @@ In Claude Code, the following tools are now available:
 | `clear_events` | Delete stored events (all or by channel). |
 | `chart` | Run SQL and render results as ASCII chart (sparkline, line, bar, histogram, table). |
 | `get_status` | WebSocket state, channels, event counts, DB path. |
+| `list_stablecoins` | Resolve stablecoins by chain, symbol, address, and decimals. |
 | `list_pipelines` | List all pipelines. Shows DIRECT channel names. |
 | `get_pipeline` | Get a pipeline by name. |
 | `create_pipeline` | Create or update a pipeline (POSTGRES, HTTP, WEBSOCKET, DIRECT). |
@@ -97,6 +98,47 @@ WHERE channel = 'my-transfers'
   AND json_extract(data, '$.chain') = 'ethereum'
 ORDER BY received_at DESC
 LIMIT 20;
+```
+
+### Stablecoin Registry
+
+Agents can resolve common payment tokens without the user pasting contract addresses.
+
+- `list_stablecoins()` returns the full registry
+- `list_stablecoins({ chain: "base" })` narrows to a single chain
+- Embedded fallback covers `USDC`, `USDT`, and `DAI` on `ethereum`, `base`, `arbitrum`, `optimism`, and `polygon`
+
+Example: `USDC` on `Base` resolves to `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
+
+### Worked Example: Track All USDC Transfers To A Wallet On Base
+
+1. Resolve the token contract with `list_stablecoins({ chain: "base" })`.
+2. Create a filter with `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`.
+3. Use a transfer transformation that keeps only rows where `decoded.to` matches the target wallet.
+4. Deploy the pipeline on `base` with a `DIRECT` or `POSTGRES` destination.
+
+```javascript
+function transform(block) {
+  const target = '0xYOUR_WALLET'.toLowerCase();
+  const token = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+
+  return templates
+    .tokenTransfers(block)
+    .filter((transfer) =>
+      transfer.contract_address?.toLowerCase() === token &&
+      transfer.decoded?.to?.toLowerCase() === target
+    )
+    .map((transfer) => ({
+      chain: transfer.chain,
+      block: transfer.block,
+      transaction_hash: transfer.transaction_hash,
+      log_index: transfer.log_index,
+      contract_address: transfer.contract_address,
+      from: transfer.decoded.from,
+      to: transfer.decoded.to,
+      value: transfer.decoded.value,
+    }));
+}
 ```
 
 ### Architecture

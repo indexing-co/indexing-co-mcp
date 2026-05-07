@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { StreamClient } from '../ws/client.js';
 import type { ApiClient } from '../api/client.js';
+import { getStablecoinRegistry, normalizeChain, type StablecoinRegistryResponse } from '../lib/stablecoins.js';
 import { insertEvents, getEvents, getStats, runQuery, describeData, clearEvents, getDbPath } from '../storage/sqlite.js';
 import { sparkline, lineChart, barChart, histogram, table } from '../cli/charts.js';
 
@@ -14,6 +15,31 @@ function error(msg: string) {
 }
 
 export function registerTools(server: McpServer, stream: StreamClient, api: ApiClient) {
+  server.tool(
+    'list_stablecoins',
+    'List supported stablecoins with chain, address, decimals, and symbol. Optional chain filter supports ethereum, base, arbitrum, optimism, and polygon.',
+    { chain: z.string().optional() },
+    async ({ chain }) => {
+      const normalizedChain = chain ? normalizeChain(chain) : null;
+      if (chain && !normalizedChain) {
+        return error(`Unsupported chain '${chain}'. Use ethereum, base, arbitrum, optimism, or polygon.`);
+      }
+
+      try {
+        return json(
+          await api.getPublic('/api/tokens/stablecoins', normalizedChain ? { chain: normalizedChain } : undefined) as StablecoinRegistryResponse
+        );
+      } catch {
+        const response: StablecoinRegistryResponse = {
+          source: 'embedded_fallback',
+          endpoint: 'https://app.indexing.co/api/tokens/stablecoins',
+          data: getStablecoinRegistry(normalizedChain ?? undefined),
+        };
+        return json(response);
+      }
+    }
+  );
+
   // ── Streaming tools (existing) ────────────────────────────────────────
 
   server.tool('subscribe', 'Subscribe to a pipeline\'s DIRECT channel. The channel name must match the `table` field of a pipeline with DIRECT adapter. Use list_pipelines to find valid channel names.', { channel: z.string() }, async ({ channel }) => {

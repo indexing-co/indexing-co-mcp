@@ -32,13 +32,33 @@ export class ApiClient {
     return this.handle(res);
   }
 
-  private headers(): Record<string, string> {
-    if (!this.apiKey) {
+  async getPublic(path: string, query?: Record<string, string>): Promise<unknown> {
+    const url = new URL(path, this.origin());
+    if (query) {
+      for (const [key, value] of Object.entries(query)) {
+        url.searchParams.set(key, value);
+      }
+    }
+    const res = await fetch(url, { headers: this.headers(false) });
+    return this.handle(res);
+  }
+
+  private headers(requireAuth = true): Record<string, string> {
+    if (!this.apiKey && requireAuth) {
       throw new Error(
         'No API key configured. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials. Sign up at accounts.indexing.co'
       );
     }
-    return { 'X-API-KEY': this.apiKey, 'Content-Type': 'application/json' };
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (this.apiKey) {
+      headers['X-API-KEY'] = this.apiKey;
+    }
+    return headers;
+  }
+
+  private origin(): string {
+    return new URL(this.baseUrl).origin;
   }
 
   private async handle(res: Response): Promise<unknown> {
