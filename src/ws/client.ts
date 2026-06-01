@@ -64,7 +64,7 @@ export class StreamClient {
         this.connectedAt = Date.now();
         this.reconnectAttempts = 0;
         this.resetActivityTimeout(data.activity_timeout || 120);
-        log(`Connected, socket_id=${this.socketId}`);
+        log('Connected to stream');
 
         // Resubscribe to all channels after reconnect
         for (const channel of this.subscriptions.keys()) {
@@ -119,11 +119,10 @@ export class StreamClient {
     }
   }
 
-  getSubscriptions(): { channels: string[]; connected: boolean; socketId: string | null; uptime: number | null } {
+  getSubscriptions(): { channels: string[]; connected: boolean; uptime: number | null } {
     return {
       channels: [...this.subscriptions.keys()],
       connected: this.connected,
-      socketId: this.socketId,
       uptime: this.connectedAt ? Math.floor((Date.now() - this.connectedAt) / 1000) : null,
     };
   }

@@ -20,7 +20,6 @@ if (!channel) {
 let totalEvents = 0;
 let connectedAt: number | null = null;
 let isConnected = false;
-let socketId: string | null = null;
 
 const eventTimestamps: number[] = [];
 const rateHistory: number[] = [];
@@ -78,7 +77,7 @@ function render(): string {
   // Status bar
   const dot = isConnected ? `${GREEN}${BOLD}●${RESET}` : `${RED}${BOLD}●${RESET}`;
   const connLabel = isConnected ? `${GREEN}Connected${RESET}` : `${RED}Disconnected${RESET}`;
-  const sock = socketId ? `Socket: ${socketId.slice(0, 6)}` : 'Socket: ---';
+  const sock = isConnected ? 'Socket: connected' : 'Socket: ---';
   const uptime = connectedAt ? formatDuration(Date.now() - connectedAt) : '---';
   const statusRaw = `  ● ${isConnected ? 'Connected' : 'Disconnected'}  │  ${sock}  │  Uptime: ${uptime}  `;
   const statusText = `  ${dot} ${connLabel}  ${GRAY}│${RESET}  ${DIM}${sock}${RESET}  ${GRAY}│${RESET}  ${DIM}Uptime:${RESET} ${WHITE}${uptime}${RESET}  `;
@@ -301,7 +300,6 @@ loadConfig()
     return stream.connect().then(async () => {
       isConnected = true;
       connectedAt = Date.now();
-      socketId = stream.getSubscriptions().socketId;
       clearTimeout(connectTimeout);
 
       await ensurePipelineEnabled(api, channel);
