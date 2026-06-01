@@ -48,7 +48,7 @@ In Claude Code, the following tools are now available:
 | `query` | Run read-only SQL with `json_extract()` support. |
 | `clear_events` | Delete stored events (all or by channel). |
 | `chart` | Run SQL and render results as ASCII chart (sparkline, line, bar, histogram, table). |
-| `get_status` | WebSocket state, channels, event counts, DB path. |
+| `get_status` | WebSocket state, channels, event counts, and uptime. |
 | `list_pipelines` | List all pipelines. Shows DIRECT channel names. |
 | `get_pipeline` | Get a pipeline by name. |
 | `create_pipeline` | Create or update a pipeline (POSTGRES, HTTP, WEBSOCKET, DIRECT). |
@@ -105,7 +105,8 @@ LIMIT 20;
 - **Auto-reconnect** with exponential backoff
 - **SQLite with WAL mode** for concurrent read/write
 - **Generic schema** — works with any pipeline output shape
-- Events stored at `~/.indexing-co/mcp-events.db`
+- Events are stored locally in SQLite. The MCP tools intentionally do not expose
+  the absolute database path.
 
 ## Environment Variables
 

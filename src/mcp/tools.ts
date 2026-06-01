@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { StreamClient } from '../ws/client.js';
 import type { ApiClient } from '../api/client.js';
-import { insertEvents, getEvents, getStats, runQuery, describeData, clearEvents, getDbPath } from '../storage/sqlite.js';
+import { insertEvents, getEvents, getStats, runQuery, describeData, clearEvents } from '../storage/sqlite.js';
 import { sparkline, lineChart, barChart, histogram, table } from '../cli/charts.js';
 
 function json(data: unknown) {
@@ -59,7 +59,6 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
     return json({
       connection: {
         connected: subs.connected,
-        socketId: subs.socketId,
         uptimeSeconds: subs.uptime,
       },
       channels: subs.channels.map((ch) => {
@@ -169,19 +168,20 @@ export function registerTools(server: McpServer, stream: StreamClient, api: ApiC
     }
   );
 
-  server.tool('get_status', 'WebSocket state, channels, event counts, uptime, DB path.', {}, async () => {
+  server.tool('get_status', 'WebSocket state, channels, event counts, and uptime.', {}, async () => {
     const subs = stream.getSubscriptions();
     const stats = getStats();
 
     return json({
       websocket: {
         connected: subs.connected,
-        socketId: subs.socketId,
         uptimeSeconds: subs.uptime,
       },
       channels: subs.channels,
       eventCounts: stats,
-      database: getDbPath(),
+      storage: {
+        enabled: true,
+      },
     });
   });
 
