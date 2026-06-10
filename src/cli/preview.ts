@@ -46,7 +46,9 @@ printBanner(channel);
 loadConfig()
   .then((config) => {
     if (!config.streamUrl || !config.apiKey) {
-      console.error('API key required. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials');
+      if (config.apiKey && !config.streamUrl) {
+        console.error('Stream URL unavailable. Check INDEXING_BASE_URL/STREAM_URL and your Indexing Co API key.');
+      }
       process.exit(1);
     }
     const stream = new StreamClient(config.streamUrl);

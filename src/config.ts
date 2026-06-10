@@ -8,6 +8,9 @@ export interface Config {
   baseUrl: string;
 }
 
+export const API_KEY_GUIDANCE =
+  'No API key configured. Sign in to Console, open Account -> API Keys, create or copy an active key, then set INDEXING_API_KEY or add API_KEY to ~/.indexing-co/credentials. New accounts include 10,000 free blocks and no card is required. Never use browser JWTs, bearer headers, destination secrets, or private keys.';
+
 export async function loadConfig(): Promise<Config> {
   const env = process.env;
 
@@ -29,9 +32,7 @@ export async function loadConfig(): Promise<Config> {
   // API config
   const apiKey = get('INDEXING_API_KEY', 'API_KEY');
   if (!apiKey) {
-    process.stderr.write(
-      '[indexing-co-mcp] WARNING: No API key configured. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials. Sign up at accounts.indexing.co\n'
-    );
+    process.stderr.write(`[indexing-co-mcp] WARNING: ${API_KEY_GUIDANCE}\n`);
   }
   const baseUrl = get('INDEXING_BASE_URL') || 'https://app.indexing.co/dw';
 

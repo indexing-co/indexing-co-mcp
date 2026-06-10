@@ -12,7 +12,7 @@ description: "Build and deploy blockchain data pipelines with Indexing Co. Use w
 | **Base URL**   | `https://app.indexing.co/dw`             |
 | **Auth**       | `X-API-KEY: {key}` header               |
 | **Docs**       | `https://docs.indexing.co`               |
-| **Sign up**    | `accounts.indexing.co` |
+| **API key**    | Console -> Account -> API Keys |
 
 ---
 
@@ -22,13 +22,15 @@ Check `~/.indexing-co/credentials` on every session start:
 
 **File exists with `API_KEY`** -> load it. Don't prompt.
 
-**File missing** -> ask user for their API key. Tell them to register at `accounts.indexing.co` if they don't have one. Save:
+**File missing** -> ask the user for an Indexing Co account API key from Console -> Account -> API Keys. New accounts include 10,000 free blocks and no card is required. Save:
 
 ```bash
 mkdir -p ~/.indexing-co && cat > ~/.indexing-co/credentials << 'EOF'
 API_KEY=...
 EOF
 ```
+
+Never request or store browser JWTs, bearer headers, destination secrets, or private keys as Indexing Co API credentials.
 
 ---
 
@@ -513,4 +515,4 @@ Configure delivery with `tableMap` instead of `table`.
 | Full docs | [docs.indexing.co](https://docs.indexing.co) |
 | LLM-optimized docs | [docs.indexing.co/llms-full.txt](https://docs.indexing.co/llms-full.txt) |
 | Network status | [jiti.indexing.co/status](https://jiti.indexing.co/status) |
-| Account signup | [accounts.indexing.co](https://accounts.indexing.co) |
+| Account API keys | Console -> Account -> API Keys |

@@ -1,3 +1,5 @@
+import { API_KEY_GUIDANCE } from '../config.js';
+
 export class ApiClient {
   constructor(
     private baseUrl: string,
@@ -34,9 +36,7 @@ export class ApiClient {
 
   private headers(): Record<string, string> {
     if (!this.apiKey) {
-      throw new Error(
-        'No API key configured. Set INDEXING_API_KEY env var or add API_KEY to ~/.indexing-co/credentials. Sign up at accounts.indexing.co'
-      );
+      throw new Error(API_KEY_GUIDANCE);
     }
     return { 'X-API-KEY': this.apiKey, 'Content-Type': 'application/json' };
   }
