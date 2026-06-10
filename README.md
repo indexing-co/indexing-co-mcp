@@ -22,11 +22,15 @@ This also installs the Claude Code [pipeline skill](SKILL.md) to `~/.claude/skil
 
 ### 2. Configure
 
-Add your stream credentials to `~/.indexing-co/credentials`:
+Sign in to Console, open Account -> API Keys, and create or copy an active account API key. New accounts include 10,000 free blocks and no card is required.
+
+Add the key to `~/.indexing-co/credentials`:
 
 ```
 API_KEY=<your Indexing Co API key>
 ```
+
+You can also set `INDEXING_API_KEY` in the MCP server environment. Do not use browser JWTs, bearer headers, destination secrets, or private keys as MCP credentials.
 
 ### 3. Register with Claude Code
 
@@ -112,13 +116,13 @@ LIMIT 20;
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `INDEXING_API_KEY` | Yes | Indexing Co API key (also read from `~/.indexing-co/credentials` as `API_KEY`) |
+| `INDEXING_API_KEY` | Yes | Indexing Co account API key from Console -> Account -> API Keys (also read from `~/.indexing-co/credentials` as `API_KEY`) |
 | `STREAM_URL` | No | Override stream WebSocket URL (auto-fetched from API if not set) |
 
 ## Requirements
 
 - Node.js 22+
-- An [Indexing Co](https://accounts.indexing.co) account
+- An Indexing Co Console account with an active API key
 
 ## License
 
