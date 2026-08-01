@@ -5,13 +5,18 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && npm run install-skill",
-    "test": "npm run build && node scripts/hardening-check.mjs",
+    "build": "npm run build:compile && npm run install-skill",
+    "build:compile": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build:compile && node scripts/hardening-check.mjs",
     "install-skill": "node scripts/install-skill.js",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "preview": "node dist/cli/preview.js",
-    "dashboard": "node dist/cli/dashboard.js"
+    "dashboard": "node dist/cli/dashboard.js",
+    "quality:contract": "node --test scripts/quality-contract.test.mjs",
+    "quality:baseline": "npm run quality:contract && npm run typecheck && npm test",
+    "quality:security": "node scripts/hardening-check.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
